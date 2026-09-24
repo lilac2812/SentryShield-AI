@@ -1,9 +1,6 @@
 import streamlit as st
 import json
 import yaml
-import difflib
-from io import BytesIO
-from fpdf import FPDF
 import pandas as pd
 import altair as alt
 
@@ -19,10 +16,48 @@ st.set_page_config(
 st.markdown("""
     <style>
         .main { background-color: #0e1117; }
-        .stMetric { background-color: #161b22; padding: 16px; border-radius: 8px; border: 1px solid #30363d; }
         .hero-title { font-size: 2.8rem; font-weight: 700; color: #f0f6fc; letter-spacing: -0.5px; }
         .hero-subtitle { font-size: 1.2rem; color: #8b949e; font-weight: 400; }
         .section-card { background-color: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
+        
+        .custom-metric-card {
+            background-color: #161b22;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            height: 100%;
+        }
+        .custom-metric-label {
+            font-size: 0.85rem;
+            color: #8b949e;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .custom-metric-value {
+            font-size: 1.4rem;
+            color: #f0f6fc;
+            font-weight: 700;
+            word-break: break-word;
+            white-space: normal;
+        }
+        .vuln-box {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-left: 5px solid #f85149;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 14px;
+        }
+        .vuln-box-med {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-left: 5px solid #d29922;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 14px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -30,7 +65,7 @@ st.markdown("""
 if 'step' not in st.session_state:
     st.session_state.step = 'welcome'
 if 'scanned_files' not in st.session_state:
-    st.session_state.scanned_files = {}  # filename -> {spec_data, issues, fixed_spec, grade}
+    st.session_state.scanned_files = {}
 if 'selected_file' not in st.session_state:
     st.session_state.selected_file = ""
 if 'messages' not in st.session_state:
@@ -71,10 +106,10 @@ def analyze_and_remediate(spec_data):
                 issues.append({
                     "severity": "HIGH",
                     "owasp": "API1:2023 - Broken Object Level Authorization",
-                    "type": "BOLA / IDOR Risk",
+                    "type": "Broken Object Level Authorization (BOLA / IDOR Risk)",
                     "path": f"{method.upper()} {path}",
-                    "details": "Path contains parameters but lacks endpoint-level or global authorization guards.",
-                    "recommendation": "Enforce JWT Bearer authentication scope on parameter routes."
+                    "details": "This route includes URL parameters (such as IDs), but lacks required authentication checks or authorization guards, allowing unauthorized users to access other records.",
+                    "recommendation": "Enforce mandatory JSON Web Token (JWT) Bearer authentication scope on all parameterized route endpoints."
                 })
                 remediated_spec["paths"][path][method]["security"] = [{"BearerAuth": []}]
 
@@ -89,10 +124,10 @@ def analyze_and_remediate(spec_data):
                         issues.append({
                             "severity": "HIGH",
                             "owasp": "API3:2023 - Broken Object Property Level Authorization",
-                            "type": "Sensitive Data Exposure",
-                            "path": f"{method.upper()} {path} (Response {code})",
-                            "details": f"Response schema exposes unmasked sensitive property: `{prop_name}`.",
-                            "recommendation": "Mask or restrict sensitive field output in API responses."
+                            "type": "Sensitive Data Exposure in API Response",
+                            "path": f"{method.upper()} {path} (Response Code {code})",
+                            "details": f"The response data schema exposes unmasked or unprotected sensitive data property: '{prop_name}'.",
+                            "recommendation": "Apply strict property-level masking, omission, or administrative authorization checks before returning sensitive records."
                         })
 
             # 3. Missing Rate Limits
@@ -102,8 +137,8 @@ def analyze_and_remediate(spec_data):
                     "owasp": "API4:2023 - Unrestricted Resource Consumption",
                     "type": "Missing Rate Limit Defenses",
                     "path": f"{method.upper()} {path}",
-                    "details": "Endpoint does not specify an HTTP 429 (Too Many Requests) response.",
-                    "recommendation": "Define explicit HTTP 429 response structures to mitigate denial-of-service."
+                    "details": "The endpoint definition does not specify an HTTP 429 (Too Many Requests) response code to handle excessive traffic.",
+                    "recommendation": "Define explicit HTTP 429 response structures in the specification to mitigate brute-force and denial-of-service attacks."
                 })
                 if "responses" in remediated_spec["paths"][path][method]:
                     remediated_spec["paths"][path][method]["responses"]["429"] = {
@@ -119,10 +154,10 @@ def analyze_and_remediate(spec_data):
         issues.append({
             "severity": "CRITICAL",
             "owasp": "API2:2023 - Broken Authentication / Insecure Transport",
-            "type": "Insecure Transport Protocol",
-            "path": "GLOBAL (Servers / Schemes)",
-            "details": "API definition includes unencrypted cleartext HTTP.",
-            "recommendation": "Enforce TLS 1.2/1.3 HTTPS transport encryption across all server URLs."
+            "type": "Insecure Cleartext Transport Protocol",
+            "path": "GLOBAL SERVER CONFIGURATION",
+            "details": "The API definition includes unencrypted cleartext HTTP server URLs or connection schemes.",
+            "recommendation": "Enforce TLS 1.2 or TLS 1.3 HTTPS transport encryption across all active server target URLs."
         })
         if "schemes" in remediated_spec:
             remediated_spec["schemes"] = ["https"]
@@ -144,62 +179,9 @@ def calculate_security_grade(issues):
     elif score >= 40: return "D (High Risk)", "🔴"
     else: return "F (Critical Vulnerabilities)", "🔴"
 
-# --- Bulletproof PDF Report Generators (Unicode Safe) ---
-def sanitize_text(text):
-    """Encodes and decodes text to safe latin-1 to completely prevent FPDF crashes."""
-    if not isinstance(text, str):
-        text = str(text)
-    return text.encode('latin-1', 'replace').decode('latin-1')
-
-def generate_audit_report_pdf(file_name, spec_title, issues, grade_text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 8, sanitize_text("SentryShield-AI Executive Security Audit Report"), 0, 1, "C")
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, sanitize_text(f"Target Specification: {file_name} ({spec_title})"), 0, 1, "C")
-    clean_grade = grade_text.replace('🟢', '').replace('🔴', '').replace('🟠', '').strip()
-    pdf.cell(0, 6, sanitize_text(f"Security Health Grade: {clean_grade}"), 0, 1, "C")
-    pdf.cell(0, 6, sanitize_text("Confidential Enterprise Compliance Document"), 0, 1, "C")
-    pdf.ln(6)
-    
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 6, sanitize_text("Vulnerability & Risk Findings Breakdown:"), 0, 1)
-    pdf.set_font("Arial", "", 9)
-    
-    if not issues:
-        pdf.cell(0, 6, sanitize_text("No vulnerabilities detected. Specification meets enterprise baseline standards."), 0, 1)
-    
-    for idx, iss in enumerate(issues, 1):
-        content = (
-            f"{idx}. [{iss['severity']}] {iss['type']} - Endpoint: {iss['path']}\n"
-            f"   OWASP Mapping: {iss['owasp']}\n"
-            f"   Risk Details: {iss['details']}\n"
-            f"   Mandated Remediation: {iss['recommendation']}\n"
-        )
-        pdf.multi_cell(0, 5, sanitize_text(content))
-        pdf.ln(2)
-        
-    return bytes(pdf.output())
-
-def generate_code_pdf(file_name, remediated_yaml):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 8, sanitize_text("SentryShield-AI Remediated Code Export"), 0, 1, "C")
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, sanitize_text(f"Production-Ready Patched Specification: {file_name}"), 0, 1, "C")
-    pdf.ln(4)
-    
-    pdf.set_font("Courier", "", 8)
-    for line in remediated_yaml.split("\n"):
-        pdf.multi_cell(0, 4, sanitize_text(line))
-        
-    return bytes(pdf.output())
-
 
 # ==========================================
-# STEP 1: PROFESSIONAL WELCOME PAGE
+# STEP 1: WELCOME SCREEN
 # ==========================================
 if st.session_state.step == 'welcome':
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -211,13 +193,12 @@ if st.session_state.step == 'welcome':
         
         st.markdown("""
         <div class='section-card'>
-            <b>Welcome to SentryShield-AI.</b> Upload multiple OpenAPI / Swagger specification files simultaneously to evaluate them against the <b>OWASP API Top 10</b>. 
+            <b>Welcome to SentryShield-AI.</b> Upload multiple OpenAPI or Swagger specification files simultaneously to evaluate them against the <b>OWASP API Top 10</b> security standards. 
             <br><br>
             <ul>
-                <li><b>Multi-File Batch Scanning:</b> Analyze entire suites of microservice specs at once.</li>
+                <li><b>Multi-File Batch Scanning:</b> Analyze entire suites of microservice specifications at once.</li>
                 <li><b>Visual Code Diffs:</b> Inspect exact self-healing patches before deployment.</li>
-                <li><b>Enterprise Reports:</b> Export executive security audits and production-ready YAML specifications instantly.</li>
-                <li><b>Guaranteed Privacy:</b> Ephemeral in-memory processing ensures your proprietary files are never stored or exposed.</li>
+                <li><b>Instant Code Export:</b> Download clean, production-ready patched YAML specifications immediately.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -229,11 +210,11 @@ if st.session_state.step == 'welcome':
 
 
 # ==========================================
-# STEP 2: BULK MULTI-FILE UPLOAD SCREEN
+# STEP 2: UPLOAD SCREEN
 # ==========================================
 elif st.session_state.step == 'upload':
     st.subheader("📁 Step 2: Upload API Specifications (Bulk Supported)")
-    st.markdown("You can upload **one or multiple** OpenAPI or Swagger specification files (`.yaml`, `.yml`, `.json`) below.")
+    st.markdown("Upload **one or multiple** OpenAPI or Swagger specification files (`.yaml`, `.yml`, `.json`) below.")
     
     uploaded_files = st.file_uploader("Choose OpenAPI files", type=["yaml", "yml", "json"], accept_multiple_files=True)
     
@@ -270,7 +251,7 @@ elif st.session_state.step == 'upload':
 
 
 # ==========================================
-# STEP 3: RESULTS & ENTERPRISE DASHBOARD
+# STEP 3: RESULTS DASHBOARD
 # ==========================================
 elif st.session_state.step == 'results':
     st.sidebar.title("📦 Uploaded Microservices")
@@ -305,16 +286,39 @@ elif st.session_state.step == 'results':
     fixed_spec = current_data["fixed_spec"]
     grade = current_data["grade"]
 
-    # Wider Layout Columns to Prevent Card Heading Truncation
-    m1, m2, m3, m4 = st.columns([1.5, 1.2, 1.2, 1.2])
+    api_title = spec.get('info', {}).get('title', 'API Specification')
+    total_endpoints = len(spec.get("paths", {}))
+    vuln_count = len(issues)
+
+    m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.metric("API Title", spec.get('info', {}).get('title', 'API Spec'))
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">API Specification Title</div>
+                <div class="custom-metric-value">{api_title}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with m2:
-        st.metric("Total Endpoints", len(spec.get("paths", {})))
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">Total Endpoints Scanned</div>
+                <div class="custom-metric-value">{total_endpoints}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with m3:
-        st.metric("Vulnerabilities", len(issues))
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">Vulnerabilities Detected</div>
+                <div class="custom-metric-value">{vuln_count}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with m4:
-        st.metric("Security Grade", grade)
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">Security Health Grade</div>
+                <div class="custom-metric-value">{grade}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -323,7 +327,7 @@ elif st.session_state.step == 'results':
         "📊 OWASP Compliance", 
         "⚠️ Vulnerability Details", 
         "🔍 Code Diff & Export", 
-        "📑 Enterprise PDF Reports", 
+        "📑 Corrected Code Download", 
         "🤖 AI Security Assistant"
     ])
 
@@ -338,7 +342,7 @@ elif st.session_state.step == 'results':
         col_b.warning(f"High Risk Items: {high}")
         col_c.info(f"Medium Risk Items: {med}")
 
-        st.markdown("### Category Distribution")
+        st.markdown("### Vulnerability Category Distribution")
         owasp_counts = {}
         for iss in issues:
             cat = iss['owasp']
@@ -347,9 +351,8 @@ elif st.session_state.step == 'results':
         if owasp_counts:
             df_chart = pd.DataFrame(list(owasp_counts.items()), columns=['OWASP Category', 'Count'])
             
-            # Horizontal bar chart prevents long category text from getting squished or clipped
             chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4, color="#3b82f6").encode(
-                y=alt.Y('OWASP Category:N', sort='-x', axis=alt.Axis(labelLimit=400, labelFontSize=11)),
+                y=alt.Y('OWASP Category:N', sort='-x', axis=alt.Axis(labelLimit=400, labelFontSize=12)),
                 x=alt.X('Count:Q', axis=alt.Axis(tickMinStep=1)),
                 tooltip=['OWASP Category', 'Count']
             ).properties(
@@ -361,69 +364,62 @@ elif st.session_state.step == 'results':
             st.success("🎉 Zero OWASP violations detected in this specification.")
 
     with tab_findings:
-        st.subheader("Detailed Vulnerability Findings & Guidance")
+        st.subheader("Detailed Vulnerability Findings & Professional Guidance")
+        st.markdown("Review plain-English explanations and remediation steps for each vulnerability detected in your API specification:")
+        
         if issues:
             for f in issues:
-                badge = "🔴" if f['severity'] in ["HIGH", "CRITICAL"] else "🟠"
-                with st.expander(f"{badge} [{f['severity']}] {f['type']} — {f['path']}"):
-                    st.markdown(f"**OWASP Standard:** `{f['owasp']}`")
-                    st.write(f"**Technical Details:** {f['details']}")
-                    st.write(f"**Mandated Remediation:** {f['recommendation']}")
+                box_class = "vuln-box" if f['severity'] in ["HIGH", "CRITICAL"] else "vuln-box-med"
+                badge_color = "🔴" if f['severity'] in ["HIGH", "CRITICAL"] else "🟠"
+                
+                st.markdown(f"""
+                <div class="{box_class}">
+                    <h3>{badge_color} [{f['severity']}] {f['type']}</h3>
+                    <p><b>Affected Endpoint / Location:</b> <code>{f['path']}</code></p>
+                    <p><b>OWASP Benchmark Standard:</b> <code>{f['owasp']}</code></p>
+                    <hr style="border-color: #30363d;">
+                    <p><b>Detailed Explanation:</b> {f['details']}</p>
+                    <p><b>Required Remediation:</b> {f['recommendation']}</p>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.success("🎉 All endpoints conform to secure architecture guidelines.")
 
     with tab_diff:
         st.subheader("Visual Code Diff & Remediation Preview")
-        st.markdown("Compare original specification lines against the self-healing patches applied by SentryShield-AI:")
+        st.markdown("Compare original vulnerable specification lines against the self-healing secure patches applied by SentryShield-AI:")
         
         orig_yaml = yaml.dump(spec, sort_keys=False)
         remediated_yaml = yaml.dump(fixed_spec, sort_keys=False)
         
         diff_col1, diff_col2 = st.columns(2)
         with diff_col1:
-            st.markdown("**Original Vulnerable Spec**")
-            st.code(orig_yaml, language="yaml", height=350)
+            st.markdown("**Original Vulnerable Specification**")
+            st.code(orig_yaml, language="yaml", height=380)
         with diff_col2:
-            st.markdown("**Self-Healing Remediated Spec**")
-            st.code(remediated_yaml, language="yaml", height=350)
+            st.markdown("**Self-Healing Remediated Specification**")
+            st.code(remediated_yaml, language="yaml", height=380)
 
     with tab_reports:
-        st.subheader("Enterprise PDF Report Deliverables")
-        st.markdown("Download formal, auditor-ready documentation for company compliance and developer deployment:")
+        st.subheader("Download Corrected & Patched API Specification")
+        st.markdown("Get your production-ready, self-healed OpenAPI YAML specification file instantly below:")
         
-        rep_col1, rep_col2 = st.columns(2)
+        remediated_yaml_download = yaml.dump(fixed_spec, sort_keys=False)
         
-        with rep_col1:
-            st.markdown("### 📑 Executive Audit Report")
-            st.markdown("Comprehensive breakdown of security ratings, OWASP mapping, and vulnerability guidance for stakeholders.")
-            audit_pdf_bytes = generate_audit_report_pdf(selected_filename, spec.get('info', {}).get('title', 'API Spec'), issues, grade)
-            st.download_button(
-                label="📥 Download Audit Report (PDF)",
-                data=audit_pdf_bytes,
-                file_name=f"{selected_filename}_audit_report.pdf",
-                mime="application/pdf",
-                type="primary",
-                use_container_width=True
-            )
-            
-        with rep_col2:
-            st.markdown("### 🛠️ Corrected Code Export")
-            st.markdown("Clean, production-ready patched YAML specification file formatted as a downloadable document for deployment.")
-            code_pdf_bytes = generate_code_pdf(selected_filename, remediated_yaml)
-            st.download_button(
-                label="📥 Download Remediated Code (PDF)",
-                data=code_pdf_bytes,
-                file_name=f"{selected_filename}_remediated_code.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-            
-        st.markdown("---")
+        st.markdown("""
+        <div class='section-card'>
+            <h4>🛠️ Production-Ready YAML Code Export</h4>
+            <p>This file includes all automated security patches, including Bearer token authentication guards, HTTP 429 rate limit responses, and secure HTTPS transport protocols.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.download_button(
-            label="📥 Download Standard YAML Source File",
-            data=remediated_yaml,
-            file_name=f"{selected_filename}_fixed.yaml",
-            mime="text/yaml"
+            label="📥 Download Secure Remediated Specification (YAML)",
+            data=remediated_yaml_download,
+            file_name=f"{selected_filename}_secure_remediated.yaml",
+            mime="text/yaml",
+            type="primary",
+            use_container_width=True
         )
 
     with tab_chat:
@@ -434,18 +430,18 @@ elif st.session_state.step == 'results':
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        if prompt := st.chat_input("e.g., Which paths have BOLA vulnerabilities?"):
+        if prompt := st.chat_input("e.g., Which endpoints have BOLA authorization vulnerabilities?"):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
 
             prompt_lower = prompt.lower()
             if "bola" in prompt_lower or "authorization" in prompt_lower:
-                response = f"In {selected_filename}, endpoints containing path parameters without explicit security schemes were flagged for BOLA risks (OWASP API1:2023) and automatically secured with Bearer tokens."
+                response = f"In '{selected_filename}', endpoints containing URL parameters without explicit security schemes were flagged for BOLA risks (OWASP API1:2023) and automatically secured with Bearer token authentication."
             elif "rate" in prompt_lower or "429" in prompt_lower:
-                response = f"Endpoints in {selected_filename} lacking explicit HTTP 429 responses were flagged for resource consumption risks (OWASP API4:2023)."
+                response = f"Endpoints in '{selected_filename}' lacking explicit HTTP 429 response structures were flagged for resource consumption risks (OWASP API4:2023) and updated with rate limit definitions."
             else:
-                response = f"I've inspected '{selected_filename}' which has {len(spec.get('paths', {}))} paths and {len(issues)} active findings. Let me know if you need help with compliance guidelines or deployment scripts!"
+                response = f"I've analyzed '{selected_filename}', which contains {len(spec.get('paths', {}))} paths and {len(issues)} active security findings. Let me know if you need help with compliance guidelines or deployment!"
 
             st.session_state.messages.append({"role": "assistant", "content": response})
             with st.chat_message("assistant"):
