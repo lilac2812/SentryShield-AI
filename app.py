@@ -30,7 +30,7 @@ st.markdown("""
 if 'step' not in st.session_state:
     st.session_state.step = 'welcome'
 if 'scanned_files' not in st.session_state:
-    st.session_state.scanned_files = {}  # Stores filename -> {spec_data, issues, fixed_spec, grade}
+    st.session_state.scanned_files = {}  # filename -> {spec_data, issues, fixed_spec, grade}
 if 'selected_file' not in st.session_state:
     st.session_state.selected_file = ""
 if 'messages' not in st.session_state:
@@ -144,27 +144,40 @@ def calculate_security_grade(issues):
     elif score >= 40: return "D (High Risk)", "🔴"
     else: return "F (Critical Vulnerabilities)", "🔴"
 
-# --- PDF Report Generators ---
-def generate_audit_report_pdf(file_name, spec_title, issues, grade):
+# --- Bulletproof PDF Report Generators (Unicode Safe) ---
+def sanitize_text(text):
+    """Encodes and decodes text to safe latin-1 to completely prevent FPDF crashes."""
+    if not isinstance(text, str):
+        text = str(text)
+    return text.encode('latin-1', 'replace').decode('latin-1')
+
+def generate_audit_report_pdf(file_name, spec_title, issues, grade_text):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "SentryShield-AI Executive Security Audit Report", 0, 1, "C")
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 8, sanitize_text("SentryShield-AI Executive Security Audit Report"), 0, 1, "C")
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, f"Target Specification: {file_name} ({spec_title})", 0, 1, "C")
-    pdf.cell(0, 6, f"Security Health Grade: {grade}", 0, 1, "C")
-    pdf.cell(0, 6, "Confidential Enterprise Compliance Document", 0, 1, "C")
-    pdf.ln(8)
+    pdf.cell(0, 6, sanitize_text(f"Target Specification: {file_name} ({spec_title})"), 0, 1, "C")
+    clean_grade = grade_text.replace('🟢', '').replace('🔴', '').replace('🟠', '').strip()
+    pdf.cell(0, 6, sanitize_text(f"Security Health Grade: {clean_grade}"), 0, 1, "C")
+    pdf.cell(0, 6, sanitize_text("Confidential Enterprise Compliance Document"), 0, 1, "C")
+    pdf.ln(6)
     
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, "Vulnerability & Risk Findings Breakdown:", 0, 1)
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 6, sanitize_text("Vulnerability & Risk Findings Breakdown:"), 0, 1)
     pdf.set_font("Arial", "", 9)
     
     if not issues:
-        pdf.cell(0, 6, "No vulnerabilities detected. Specification meets enterprise baseline standards.", 0, 1)
+        pdf.cell(0, 6, sanitize_text("No vulnerabilities detected. Specification meets enterprise baseline standards."), 0, 1)
     
     for idx, iss in enumerate(issues, 1):
-        pdf.multi_cell(0, 5, f"{idx}. [{iss['severity']}] {iss['type']} - Endpoint: {iss['path']}\n   OWASP Mapping: {iss['owasp']}\n   Risk Details: {iss['details']}\n   Mandated Remediation: {iss['recommendation']}\n")
+        content = (
+            f"{idx}. [{iss['severity']}] {iss['type']} - Endpoint: {iss['path']}\n"
+            f"   OWASP Mapping: {iss['owasp']}\n"
+            f"   Risk Details: {iss['details']}\n"
+            f"   Mandated Remediation: {iss['recommendation']}\n"
+        )
+        pdf.multi_cell(0, 5, sanitize_text(content))
         pdf.ln(2)
         
     return bytes(pdf.output())
@@ -172,15 +185,15 @@ def generate_audit_report_pdf(file_name, spec_title, issues, grade):
 def generate_code_pdf(file_name, remediated_yaml):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "SentryShield-AI Remediated Code Export", 0, 1, "C")
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 8, sanitize_text("SentryShield-AI Remediated Code Export"), 0, 1, "C")
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, f"Production-Ready Patched Specification: {file_name}", 0, 1, "C")
-    pdf.ln(6)
+    pdf.cell(0, 6, sanitize_text(f"Production-Ready Patched Specification: {file_name}"), 0, 1, "C")
+    pdf.ln(4)
     
     pdf.set_font("Courier", "", 8)
     for line in remediated_yaml.split("\n"):
-        pdf.multi_cell(0, 4, line)
+        pdf.multi_cell(0, 4, sanitize_text(line))
         
     return bytes(pdf.output())
 
@@ -260,12 +273,11 @@ elif st.session_state.step == 'upload':
 # STEP 3: RESULTS & ENTERPRISE DASHBOARD
 # ==========================================
 elif st.session_state.step == 'results':
-    # Sidebar Navigation for Multi-File Selection
     st.sidebar.title("📦 Uploaded Microservices")
     st.sidebar.markdown("Select a specification file to inspect its security posture:")
     
     file_list = list(st.session_state.scanned_files.keys())
-    selected_filename = st.sidebar.selectbox("Active File", file_list, index=file_list.index(st.session_state.selected_file))
+    selected_filename = st.sidebar.selectbox("Active File", file_list, index=file_list.index(st.session_state.selected_file) if st.session_state.selected_file in file_list else 0)
     st.session_state.selected_file = selected_filename
     
     st.sidebar.markdown("---")
@@ -273,11 +285,9 @@ elif st.session_state.step == 'results':
         st.session_state.step = 'upload'
         st.rerun()
         
-    # Privacy Badge in Sidebar
     st.sidebar.markdown("### 🔒 Security Status")
     st.sidebar.info("Files are processed securely in temporary RAM memory. No persistent database logging.")
 
-    # Main Header & File Switcher
     top_col1, top_col2 = st.columns([3, 1])
     with top_col1:
         st.title(f"📊 Security Hub: {selected_filename}")
@@ -289,21 +299,20 @@ elif st.session_state.step == 'results':
 
     st.markdown("---")
 
-    # Load active file data
     current_data = st.session_state.scanned_files[selected_filename]
     spec = current_data["spec_data"]
     issues = current_data["issues"]
     fixed_spec = current_data["fixed_spec"]
     grade = current_data["grade"]
 
-    # Metrics Row
-    m1, m2, m3, m4 = st.columns(4)
+    # Wider Layout Columns to Prevent Card Heading Truncation
+    m1, m2, m3, m4 = st.columns([1.5, 1.2, 1.2, 1.2])
     with m1:
         st.metric("API Title", spec.get('info', {}).get('title', 'API Spec'))
     with m2:
         st.metric("Total Endpoints", len(spec.get("paths", {})))
     with m3:
-        st.metric("Vulnerabilities Found", len(issues))
+        st.metric("Vulnerabilities", len(issues))
     with m4:
         st.metric("Security Grade", grade)
 
@@ -338,12 +347,13 @@ elif st.session_state.step == 'results':
         if owasp_counts:
             df_chart = pd.DataFrame(list(owasp_counts.items()), columns=['OWASP Category', 'Count'])
             
-            chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#3b82f6").encode(
-                x=alt.X('OWASP Category:N', sort='-y', axis=alt.Axis(labelAngle=-20, labelLimit=350)),
-                y=alt.Y('Count:Q', axis=alt.Axis(tickMinStep=1)),
+            # Horizontal bar chart prevents long category text from getting squished or clipped
+            chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4, color="#3b82f6").encode(
+                y=alt.Y('OWASP Category:N', sort='-x', axis=alt.Axis(labelLimit=400, labelFontSize=11)),
+                x=alt.X('Count:Q', axis=alt.Axis(tickMinStep=1)),
                 tooltip=['OWASP Category', 'Count']
             ).properties(
-                height=350
+                height=300
             ).interactive()
             
             st.altair_chart(chart, use_container_width=True)
