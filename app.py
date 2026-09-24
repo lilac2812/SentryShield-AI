@@ -2,7 +2,6 @@ import streamlit as st
 import json
 import yaml
 import pandas as pd
-import altair as alt
 from datetime import datetime
 
 # --- Page Configuration ---
@@ -373,27 +372,31 @@ elif st.session_state.step == 'results':
         col_b.warning(f"High Risk Items: {high}")
         col_c.info(f"Medium Risk Items: {med}")
 
-        st.markdown("### Vulnerability Category Distribution")
-        owasp_counts = {}
-        for iss in issues:
-            cat = iss['owasp']
-            owasp_counts[cat] = owasp_counts.get(cat, 0) + 1
+        st.markdown("### Active OWASP Compliance Matrix")
+        st.markdown("Review benchmark status across core API security categories for this specification:")
         
-        if owasp_counts:
-            df_chart = pd.DataFrame(list(owasp_counts.items()), columns=['OWASP Category', 'Count'])
+        table_data = []
+        detected_categories = {iss['owasp'] for iss in issues}
+        
+        benchmark_categories = [
+            ("API1:2023 - Broken Object Level Authorization", "Object-level access checks on resources"),
+            ("API2:2023 - Broken Authentication / Transport", "Transport encryption and credential handling"),
+            ("API3:2023 - Broken Object Property Authorization", "Sensitive property exposure controls"),
+            ("API4:2023 - Unrestricted Resource Consumption", "Rate limiting and request quotas"),
+            ("API5:2023 - Broken Function Level Authorization", "Administrative endpoint restriction")
+        ]
+        
+        for cat_name, description in benchmark_categories:
+            is_flagged = any(cat_name in cat for cat in detected_categories)
+            status = "🔴 Vulnerabilities Found (Patched)" if is_flagged else "🟢 Secure / Compliant"
+            table_data.append({
+                "OWASP Benchmark Standard": cat_name,
+                "Security Control Scope": description,
+                "Compliance Status": status
+            })
             
-            # Horizontal bar chart configured to prevent label cutoff
-            chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4, color="#3b82f6").encode(
-                y=alt.Y('OWASP Category:N', sort='-x', axis=alt.Axis(labelLimit=400, labelFontSize=12)),
-                x=alt.X('Count:Q', axis=alt.Axis(tickMinStep=1)),
-                tooltip=['OWASP Category', 'Count']
-            ).properties(
-                height=260
-            ).interactive()
-            
-            st.altair_chart(chart, use_container_width=True)
-        else:
-            st.success("🎉 Zero OWASP violations detected in this specification.")
+        df_compliance = pd.DataFrame(table_data)
+        st.dataframe(df_compliance, use_container_width=True, hide_index=True)
 
     with tab_findings:
         st.subheader("Detailed Vulnerability Findings & Professional Guidance")
