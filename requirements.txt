@@ -1,5 +1,4 @@
 streamlit
 pyyaml
-fpdf2
 pandas
 altair
