@@ -257,7 +257,10 @@ elif st.session_state.step == 'upload':
     with col_next:
         if uploaded_files:
             if st.button("🔍 Run Bulk Security Analysis", type="primary"):
-                st.session_state.scanned_files = {}
+                # Preserve existing scanned files and update with newly uploaded ones
+                if 'scanned_files' not in st.session_state:
+                    st.session_state.scanned_files = {}
+                
                 for f in uploaded_files:
                     try:
                         content = f.read().decode("utf-8")
