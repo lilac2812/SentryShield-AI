@@ -185,9 +185,6 @@ elif st.session_state.step == 'results':
 
     st.markdown("---")
 
-    # Split View for Findings vs Remediated Code
-    col_left, col_right = st.columns(1) # Can make it 2 columns or stacked tabs
-
     tab_findings, tab_code = st.tabs(["⚠️ Vulnerability Findings", "🛠️ Remediated Spec Preview & Export"])
 
     with tab_findings:
@@ -202,12 +199,17 @@ elif st.session_state.step == 'results':
 
     with tab_code:
         st.markdown("### Self-Healing Auto-Patched Specification")
+        st.markdown("Download the fully remediated, production-ready specification file below:")
+        
         remediated_yaml = yaml.dump(fixed_spec, sort_keys=False)
-        st.code(remediated_yaml, language="yaml", height=400)
-
+        
         st.download_button(
             label="📥 Download Production-Ready Fixed Spec (YAML)",
             data=remediated_yaml,
             file_name="sentryshield_remediated_spec.yaml",
-            mime="text/yaml"
+            mime="text/yaml",
+            type="primary"
         )
+        
+        st.markdown("---")
+        st.code(remediated_yaml, language="yaml", height=400)
