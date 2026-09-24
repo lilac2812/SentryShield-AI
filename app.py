@@ -261,7 +261,7 @@ elif st.session_state.step == 'results':
         "🤖 AI Security Assistant"
     ])
 
-    with tab_overview:
+   with tab_overview:
         st.subheader("OWASP API Top 10 Risk Breakdown")
         crit = sum(1 for i in issues if i['severity'] == 'CRITICAL')
         high = sum(1 for i in issues if i['severity'] == 'HIGH')
@@ -283,7 +283,7 @@ elif st.session_state.step == 'results':
             
             chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#3b82f6").encode(
                 x=alt.X('OWASP Category:N', sort='-y', axis=alt.Axis(labelAngle=-20, labelLimit=350)),
-                y=alt.Y('Count:Q', axis=alt.Axis(tickInteger=True)),
+                y=alt.Y('Count:Q', axis=alt.Axis(tickMinStep=1)),
                 tooltip=['OWASP Category', 'Count']
             ).properties(
                 height=350
