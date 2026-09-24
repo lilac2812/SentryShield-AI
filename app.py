@@ -4,6 +4,8 @@ import yaml
 import difflib
 from io import BytesIO
 from fpdf import FPDF
+import pandas as pd
+import altair as alt
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -277,7 +279,17 @@ elif st.session_state.step == 'results':
             owasp_counts[cat] = owasp_counts.get(cat, 0) + 1
         
         if owasp_counts:
-            st.bar_chart(owasp_counts)
+            df_chart = pd.DataFrame(list(owasp_counts.items()), columns=['OWASP Category', 'Count'])
+            
+            chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#3b82f6").encode(
+                x=alt.X('OWASP Category:N', sort='-y', axis=alt.Axis(labelAngle=-20, labelLimit=350)),
+                y=alt.Y('Count:Q', axis=alt.Axis(tickInteger=True)),
+                tooltip=['OWASP Category', 'Count']
+            ).properties(
+                height=350
+            ).interactive()
+            
+            st.altair_chart(chart, use_container_width=True)
         else:
             st.success("No OWASP violations recorded.")
 
