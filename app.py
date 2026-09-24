@@ -3,6 +3,7 @@ import json
 import yaml
 import pandas as pd
 import altair as alt
+from datetime import datetime
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -179,6 +180,36 @@ def calculate_security_grade(issues):
     elif score >= 40: return "D (High Risk)", "🔴"
     else: return "F (Critical Vulnerabilities)", "🔴"
 
+def generate_audit_report_text(filename, spec_title, total_endpoints, grade, issues):
+    report = []
+    report.append("=" * 60)
+    report.append("       SENTRYSHIELD-AI ENTERPRISE SECURITY AUDIT REPORT")
+    report.append("=" * 60)
+    report.append(f"Generated Timestamp : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report.append(f"File Inspected      : {filename}")
+    report.append(f"API Specification   : {spec_title}")
+    report.append(f"Endpoints Scanned   : {total_endpoints}")
+    report.append(f"Security Posture    : {grade}")
+    report.append("-" * 60)
+    report.append("EXECUTIVE SUMMARY & COMPLIANCE FINDINGS:")
+    report.append(f"Total Vulnerabilities Detected: {len(issues)}")
+    report.append("-" * 60)
+    
+    if not issues:
+        report.append("No security vulnerabilities were identified in this specification. All routes conform to OWASP API Top 10 guidelines.")
+    else:
+        for idx, iss in enumerate(issues, 1):
+            report.append(f"\n[{idx}] SEVERITY: {iss['severity']}")
+            report.append(f"    Category: {iss['owasp']}")
+            report.append(f"    Issue   : {iss['type']}")
+            report.append(f"    Target  : {iss['path']}")
+            report.append(f"    Details : {iss['details']}")
+            report.append(f"    Action  : {iss['recommendation']}")
+            report.append("-" * 40)
+            
+    report.append("\nEnd of SentryShield-AI Audit Deliverable.")
+    return "\n".join(report)
+
 
 # ==========================================
 # STEP 1: WELCOME SCREEN
@@ -198,7 +229,7 @@ if st.session_state.step == 'welcome':
             <ul>
                 <li><b>Multi-File Batch Scanning:</b> Analyze entire suites of microservice specifications at once.</li>
                 <li><b>Visual Code Diffs:</b> Inspect exact self-healing patches before deployment.</li>
-                <li><b>Instant Code Export:</b> Download clean, production-ready patched YAML specifications immediately.</li>
+                <li><b>Instant Code & Report Exports:</b> Download professional audit documentation and patched YAML specifications immediately.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -327,7 +358,7 @@ elif st.session_state.step == 'results':
         "📊 OWASP Compliance", 
         "⚠️ Vulnerability Details", 
         "🔍 Code Diff & Export", 
-        "📑 Corrected Code Download", 
+        "📑 Enterprise PDF Reports", 
         "🤖 AI Security Assistant"
     ])
 
@@ -351,12 +382,13 @@ elif st.session_state.step == 'results':
         if owasp_counts:
             df_chart = pd.DataFrame(list(owasp_counts.items()), columns=['OWASP Category', 'Count'])
             
+            # Horizontal bar chart configured to prevent label cutoff
             chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4, color="#3b82f6").encode(
                 y=alt.Y('OWASP Category:N', sort='-x', axis=alt.Axis(labelLimit=400, labelFontSize=12)),
                 x=alt.X('Count:Q', axis=alt.Axis(tickMinStep=1)),
                 tooltip=['OWASP Category', 'Count']
             ).properties(
-                height=300
+                height=260
             ).interactive()
             
             st.altair_chart(chart, use_container_width=True)
@@ -401,26 +433,45 @@ elif st.session_state.step == 'results':
             st.code(remediated_yaml, language="yaml", height=380)
 
     with tab_reports:
-        st.subheader("Download Corrected & Patched API Specification")
-        st.markdown("Get your production-ready, self-healed OpenAPI YAML specification file instantly below:")
+        st.subheader("Enterprise PDF Report Deliverables")
+        st.markdown("Download formal, auditor-ready documentation for company compliance and developer deployment:")
         
-        remediated_yaml_download = yaml.dump(fixed_spec, sort_keys=False)
+        col_rep1, col_rep2 = st.columns(2)
         
-        st.markdown("""
-        <div class='section-card'>
-            <h4>🛠️ Production-Ready YAML Code Export</h4>
-            <p>This file includes all automated security patches, including Bearer token authentication guards, HTTP 429 rate limit responses, and secure HTTPS transport protocols.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.download_button(
-            label="📥 Download Secure Remediated Specification (YAML)",
-            data=remediated_yaml_download,
-            file_name=f"{selected_filename}_secure_remediated.yaml",
-            mime="text/yaml",
-            type="primary",
-            use_container_width=True
-        )
+        with col_rep1:
+            st.markdown("""
+            <div class='section-card'>
+                <h4>📑 Executive Audit Report</h4>
+                <p>Comprehensive breakdown of security ratings, OWASP mapping, and vulnerability guidance for stakeholders.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            audit_report_content = generate_audit_report_text(selected_filename, api_title, total_endpoints, grade, issues)
+            st.download_button(
+                label="📥 Download Audit Report (TXT)",
+                data=audit_report_content,
+                file_name=f"{selected_filename}_Audit_Report.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+            
+        with col_rep2:
+            st.markdown("""
+            <div class='section-card'>
+                <h4>🛠️ Corrected Code Export</h4>
+                <p>Clean, production-ready patched YAML specification file formatted as a downloadable document for deployment.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            remediated_yaml_download = yaml.dump(fixed_spec, sort_keys=False)
+            st.download_button(
+                label="📥 Download Patched YAML Spec",
+                data=remediated_yaml_download,
+                file_name=f"{selected_filename}_secure_remediated.yaml",
+                mime="text/yaml",
+                type="primary",
+                use_container_width=True
+            )
 
     with tab_chat:
         st.subheader("Interactive API Security Assistant")
