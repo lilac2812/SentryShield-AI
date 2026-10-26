@@ -215,11 +215,11 @@ def calculate_security_grade(issues):
     high = sum(1 for i in issues if i['severity'] == 'HIGH')
     med = sum(1 for i in issues if i['severity'] == 'MEDIUM')
     score = max(0, 100 - (crit * 30 + high * 15 + med * 5))
-    if score >= 90: return "A (Secure)", "Optimal"
-    elif score >= 75: return "B (Good)", "Stable"
-    elif score >= 60: return "C (Moderate Risk)", "Caution"
-    elif score >= 40: return "D (High Risk)", "Warning"
-    else: return "F (Critical Vulnerabilities)", "Critical"
+    if score >= 90: return "A (Secure)", "🟢"
+    elif score >= 75: return "B (Good)", "🟢"
+    elif score >= 60: return "C (Moderate Risk)", "🟠"
+    elif score >= 40: return "D (High Risk)", "🔴"
+    else: return "F (Critical Vulnerabilities)", "🔴"
 
 def generate_audit_report_text(filename, spec_title, total_endpoints, grade, issues):
     report = []
@@ -307,13 +307,13 @@ elif st.session_state.step == 'upload':
                         content = f.read().decode("utf-8")
                         spec = json.loads(content) if f.name.endswith(".json") else yaml.safe_load(content)
                         issues, fixed_spec = analyze_and_remediate(spec)
-                        grade, grade_label = calculate_security_grade(issues)
+                        grade, grade_icon = calculate_security_grade(issues)
                         
                         st.session_state.scanned_files[f.name] = {
                             "spec_data": spec,
                             "issues": issues,
                             "fixed_spec": fixed_spec,
-                            "grade": f"{grade} ({grade_label})"
+                            "grade": f"{grade_icon} {grade}"
                         }
                     except Exception as e:
                         st.error(f"Error parsing {f.name}: {e}")
@@ -432,7 +432,7 @@ elif st.session_state.step == 'results':
         
         for cat_name, description in benchmark_categories:
             is_flagged = any(cat_name in cat for cat in detected_categories)
-            status = "Vulnerabilities Found (Patched)" if is_flagged else "Secure / Compliant"
+            status = "🔴 Vulnerabilities Found (Patched)" if is_flagged else "🟢 Secure / Compliant"
             table_data.append({
                 "OWASP Benchmark Standard": cat_name,
                 "Security Control Scope": description,
@@ -449,10 +449,11 @@ elif st.session_state.step == 'results':
         if issues:
             for f in issues:
                 box_class = "vuln-box" if f['severity'] in ["HIGH", "CRITICAL"] else "vuln-box-med"
+                badge_color = "🔴" if f['severity'] in ["HIGH", "CRITICAL"] else "🟠"
                 
                 st.markdown(f"""
                 <div class="{box_class}">
-                    <h3>[{f['severity']}] {f['type']}</h3>
+                    <h3>{badge_color} [{f['severity']}] {f['type']}</h3>
                     <p><b>Affected Endpoint / Location:</b> <code>{f['path']}</code></p>
                     <p><b>OWASP Benchmark Standard:</b> <code>{f['owasp']}</code></p>
                     <hr style="border-color: #30363d;">
@@ -461,7 +462,7 @@ elif st.session_state.step == 'results':
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.success("All endpoints conform to secure architecture guidelines.")
+            st.success("🟢 All endpoints conform to secure architecture guidelines.")
 
     with tab_diff:
         st.subheader("Visual Code Diff & Remediation Preview")
