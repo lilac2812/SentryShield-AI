@@ -215,11 +215,11 @@ def calculate_security_grade(issues):
     high = sum(1 for i in issues if i['severity'] == 'HIGH')
     med = sum(1 for i in issues if i['severity'] == 'MEDIUM')
     score = max(0, 100 - (crit * 30 + high * 15 + med * 5))
-    if score >= 90: return "A (Secure)", "🟢"
-    elif score >= 75: return "B (Good)", "🟢"
-    elif score >= 60: return "C (Moderate Risk)", "🟠"
-    elif score >= 40: return "D (High Risk)", "🔴"
-    else: return "F (Critical Vulnerabilities)", "🔴"
+    if score >= 90: return "A (Secure)", "Optimal"
+    elif score >= 75: return "B (Good)", "Stable"
+    elif score >= 60: return "C (Moderate Risk)", "Caution"
+    elif score >= 40: return "D (High Risk)", "Warning"
+    else: return "F (Critical Vulnerabilities)", "Critical"
 
 def generate_audit_report_text(filename, spec_title, total_endpoints, grade, issues):
     report = []
@@ -259,7 +259,7 @@ if st.session_state.step == 'welcome':
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2.5, 1])
     with col2:
-        st.markdown("<h1 class='hero-title' align='center'>🛡️ SentryShield-AI</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 class='hero-title' align='center'>SentryShield-AI</h1>", unsafe_allow_html=True)
         st.markdown("<p class='hero-subtitle' align='center'>Enterprise OpenAPI Security Intelligence & Self-Healing Gateway</p>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -276,7 +276,7 @@ if st.session_state.step == 'welcome':
         """, unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚀 Launch Security Suite", type="primary", use_container_width=True):
+        if st.button("Launch Security Suite", type="primary", use_container_width=True):
             st.session_state.step = 'upload'
             st.rerun()
 
@@ -285,20 +285,20 @@ if st.session_state.step == 'welcome':
 # UPLOAD SCREEN
 # ==========================================
 elif st.session_state.step == 'upload':
-    st.subheader("📁 Upload API Specifications")
+    st.subheader("Upload API Specifications")
     st.markdown("Upload **one or multiple** OpenAPI or Swagger specification files (`.yaml`, `.yml`, `.json`) below to begin your security evaluation.")
     
     uploaded_files = st.file_uploader("Choose OpenAPI files", type=["yaml", "yml", "json"], accept_multiple_files=True)
     
     col_back, col_next = st.columns([1, 1])
     with col_back:
-        if st.button("⬅️ Return to Overview"):
+        if st.button("Return to Overview"):
             st.session_state.step = 'welcome'
             st.rerun()
             
     with col_next:
         if uploaded_files:
-            if st.button("🔍 Run Security Analysis", type="primary"):
+            if st.button("Run Security Analysis", type="primary"):
                 if 'scanned_files' not in st.session_state:
                     st.session_state.scanned_files = {}
                 
@@ -307,13 +307,13 @@ elif st.session_state.step == 'upload':
                         content = f.read().decode("utf-8")
                         spec = json.loads(content) if f.name.endswith(".json") else yaml.safe_load(content)
                         issues, fixed_spec = analyze_and_remediate(spec)
-                        grade, grade_icon = calculate_security_grade(issues)
+                        grade, grade_label = calculate_security_grade(issues)
                         
                         st.session_state.scanned_files[f.name] = {
                             "spec_data": spec,
                             "issues": issues,
                             "fixed_spec": fixed_spec,
-                            "grade": f"{grade_icon} {grade}"
+                            "grade": f"{grade} ({grade_label})"
                         }
                     except Exception as e:
                         st.error(f"Error parsing {f.name}: {e}")
@@ -328,8 +328,218 @@ elif st.session_state.step == 'upload':
 # RESULTS DASHBOARD
 # ==========================================
 elif st.session_state.step == 'results':
-    st.sidebar.title("📦 Uploaded Microservices")
+    st.sidebar.title("Uploaded Microservices")
     st.sidebar.markdown("Select a specification file to inspect its security posture:")
     
     file_list = list(st.session_state.scanned_files.keys())
-    selected_filename = st.sidebar.selectbox
+    selected_filename = st.sidebar.selectbox("Active File", file_list, index=file_list.index(st.session_state.selected_file) if st.session_state.selected_file in file_list else 0)
+    st.session_state.selected_file = selected_filename
+    
+    st.sidebar.markdown("---")
+    if st.sidebar.button("Upload More Files"):
+        st.session_state.step = 'upload'
+        st.rerun()
+        
+    st.sidebar.markdown("### Security Status")
+    st.sidebar.info("Files are processed securely in temporary RAM memory. No persistent database logging.")
+
+    top_col1, top_col2 = st.columns([3, 1])
+    with top_col1:
+        st.title(f"Security Hub: {selected_filename}")
+    with top_col2:
+        if st.button("Reset All Scans", use_container_width=True):
+            st.session_state.step = 'upload'
+            st.session_state.scanned_files = {}
+            st.rerun()
+
+    st.markdown("---")
+
+    current_data = st.session_state.scanned_files[selected_filename]
+    spec = current_data["spec_data"]
+    issues = current_data["issues"]
+    fixed_spec = current_data["fixed_spec"]
+    grade = current_data["grade"]
+
+    api_title = spec.get('info', {}).get('title', 'API Specification')
+    total_endpoints = len(spec.get("paths", {}))
+    vuln_count = len(issues)
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">API Specification Title</div>
+                <div class="custom-metric-value">{api_title}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with m2:
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">Total Endpoints Scanned</div>
+                <div class="custom-metric-value">{total_endpoints}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with m3:
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">Vulnerabilities Detected</div>
+                <div class="custom-metric-value">{vuln_count}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with m4:
+        st.markdown(f"""
+            <div class="custom-metric-card">
+                <div class="custom-metric-label">Security Health Grade</div>
+                <div class="custom-metric-value">{grade}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Multi-tab Workspace
+    tab_overview, tab_findings, tab_diff, tab_reports, tab_chat = st.tabs([
+        "OWASP Compliance", 
+        "Vulnerability Details", 
+        "Code Diff & Export", 
+        "Enterprise PDF Reports", 
+        "AI Security Assistant"
+    ])
+
+    with tab_overview:
+        st.subheader("OWASP API Top 10 Compliance Mapping")
+        crit = sum(1 for i in issues if i['severity'] == 'CRITICAL')
+        high = sum(1 for i in issues if i['severity'] == 'HIGH')
+        med = sum(1 for i in issues if i['severity'] == 'MEDIUM')
+
+        col_a, col_b, col_c = st.columns(3)
+        col_a.error(f"Critical Risk Items: {crit}")
+        col_b.warning(f"High Risk Items: {high}")
+        col_c.info(f"Medium Risk Items: {med}")
+
+        st.markdown("### Active OWASP Compliance Matrix")
+        st.markdown("Review benchmark status across core API security categories for this specification:")
+        
+        table_data = []
+        detected_categories = {iss['owasp'] for iss in issues}
+        
+        benchmark_categories = [
+            ("API1:2023 - Broken Object Level Authorization", "Object-level access checks on resources"),
+            ("API2:2023 - Broken Authentication / Transport", "Transport encryption and credential handling"),
+            ("API3:2023 - Broken Object Property Authorization", "Sensitive property exposure controls"),
+            ("API4:2023 - Unrestricted Resource Consumption", "Rate limiting and request quotas"),
+            ("API5:2023 - Broken Function Level Authorization", "Administrative endpoint restriction")
+        ]
+        
+        for cat_name, description in benchmark_categories:
+            is_flagged = any(cat_name in cat for cat in detected_categories)
+            status = "Vulnerabilities Found (Patched)" if is_flagged else "Secure / Compliant"
+            table_data.append({
+                "OWASP Benchmark Standard": cat_name,
+                "Security Control Scope": description,
+                "Compliance Status": status
+            })
+            
+        df_compliance = pd.DataFrame(table_data)
+        st.dataframe(df_compliance, use_container_width=True, hide_index=True)
+
+    with tab_findings:
+        st.subheader("Detailed Vulnerability Findings & Professional Guidance")
+        st.markdown("Review plain-English explanations and remediation steps for each vulnerability detected in your API specification:")
+        
+        if issues:
+            for f in issues:
+                box_class = "vuln-box" if f['severity'] in ["HIGH", "CRITICAL"] else "vuln-box-med"
+                
+                st.markdown(f"""
+                <div class="{box_class}">
+                    <h3>[{f['severity']}] {f['type']}</h3>
+                    <p><b>Affected Endpoint / Location:</b> <code>{f['path']}</code></p>
+                    <p><b>OWASP Benchmark Standard:</b> <code>{f['owasp']}</code></p>
+                    <hr style="border-color: #30363d;">
+                    <p><b>Detailed Explanation:</b> {f['details']}</p>
+                    <p><b>Required Remediation:</b> {f['recommendation']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.success("All endpoints conform to secure architecture guidelines.")
+
+    with tab_diff:
+        st.subheader("Visual Code Diff & Remediation Preview")
+        st.markdown("Compare original vulnerable specification lines against the self-healing secure patches applied by SentryShield-AI:")
+        
+        orig_yaml = yaml.dump(spec, sort_keys=False)
+        remediated_yaml = yaml.dump(fixed_spec, sort_keys=False)
+        
+        diff_col1, diff_col2 = st.columns(2)
+        with diff_col1:
+            st.markdown("**Original Vulnerable Specification**")
+            st.code(orig_yaml, language="yaml", height=380)
+        with diff_col2:
+            st.markdown("**Self-Healing Remediated Specification**")
+            st.code(remediated_yaml, language="yaml", height=380)
+
+    with tab_reports:
+        st.subheader("Enterprise PDF Report Deliverables")
+        st.markdown("Download formal, auditor-ready documentation for company compliance and developer deployment:")
+        
+        col_rep1, col_rep2 = st.columns(2)
+        
+        with col_rep1:
+            st.markdown("""
+            <div class='section-card'>
+                <h4>Executive Audit Report</h4>
+                <p>Comprehensive breakdown of security ratings, OWASP mapping, and vulnerability guidance for stakeholders.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            audit_report_content = generate_audit_report_text(selected_filename, api_title, total_endpoints, grade, issues)
+            st.download_button(
+                label="Download Audit Report (TXT)",
+                data=audit_report_content,
+                file_name=f"{selected_filename}_Audit_Report.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+            
+        with col_rep2:
+            st.markdown("""
+            <div class='section-card'>
+                <h4>Corrected Code Export</h4>
+                <p>Clean, production-ready patched YAML specification file formatted as a downloadable document for deployment.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            remediated_yaml_download = yaml.dump(fixed_spec, sort_keys=False)
+            st.download_button(
+                label="Download Patched YAML Spec",
+                data=remediated_yaml_download,
+                file_name=f"{selected_filename}_secure_remediated.yaml",
+                mime="text/yaml",
+                type="primary",
+                use_container_width=True
+            )
+
+    with tab_chat:
+        st.subheader("Interactive API Security Assistant")
+        st.markdown(f"Ask questions regarding security posture, endpoints, or patches for **{selected_filename}**.")
+        
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        if prompt := st.chat_input("e.g., Which endpoints have BOLA authorization vulnerabilities?"):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            prompt_lower = prompt.lower()
+            if "bola" in prompt_lower or "authorization" in prompt_lower:
+                response = f"In '{selected_filename}', endpoints containing URL parameters without explicit security schemes were flagged for BOLA risks (OWASP API1:2023) and automatically secured with Bearer token authentication."
+            elif "rate" in prompt_lower or "429" in prompt_lower:
+                response = f"In '{selected_filename}', endpoints lacking explicit HTTP 429 response structures were flagged for resource consumption risks (OWASP API4:2023) and updated with rate limit definitions."
+            else:
+                response = f"I've analyzed '{selected_filename}', which contains {len(spec.get('paths', {}))} paths and {len(issues)} active security findings. Let me know if you need help with compliance guidelines or deployment!"
+
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            with st.chat_message("assistant"):
+                st.markdown(response)
