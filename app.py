@@ -21,8 +21,8 @@ st.markdown("""
             color: #f3e8ff;
         }
         
-        .hero-title { font-size: 2.8rem; font-weight: 700; color: #f3e8ff; letter-spacing: -0.5px; }
-        .hero-subtitle { font-size: 1.2rem; color: #d8b4fe; font-weight: 400; }
+        .hero-title { font-size: 2.8rem; font-weight: 700; color: #f3e8ff; letter-spacing: -0.5px; margin: 0; }
+        .hero-subtitle { font-size: 1.2rem; color: #d8b4fe; font-weight: 400; margin-top: 5px; }
         
         .section-card { 
             background: rgba(46, 16, 101, 0.45) !important;
@@ -257,10 +257,16 @@ def generate_audit_report_text(filename, spec_title, total_endpoints, grade, iss
 # ==========================================
 if st.session_state.step == 'welcome':
     st.markdown("<br><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2.5, 1])
+    col1, col2, col3 = st.columns([1, 3.5, 1])
     with col2:
-        st.markdown("<h1 class='hero-title' align='center'>SentryShield-AI</h1>", unsafe_allow_html=True)
-        st.markdown("<p class='hero-subtitle' align='center'>Enterprise OpenAPI Security Intelligence & Self-Healing Gateway</p>", unsafe_allow_html=True)
+        # Side-by-side layout for Logo and Title
+        logo_col, title_col = st.columns([1, 4])
+        with logo_col:
+            st.image("sticker_1793028013669.jpg", width=85)
+        with title_col:
+            st.markdown("<h1 class='hero-title'>SentryShield-AI</h1>", unsafe_allow_html=True)
+            st.markdown("<p class='hero-subtitle'>Enterprise OpenAPI Security Intelligence & Self-Healing Gateway</p>", unsafe_allow_html=True)
+        
         st.markdown("<br>", unsafe_allow_html=True)
         
         st.markdown("""
