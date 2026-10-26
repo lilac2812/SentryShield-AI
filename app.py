@@ -12,24 +12,42 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Professional Custom CSS ---
+# --- Professional Custom CSS (Modern Glass - Dark Purple Theme) ---
 st.markdown("""
     <style>
-        .main { background-color: #0e1117; }
-        .hero-title { font-size: 2.8rem; font-weight: 700; color: #f0f6fc; letter-spacing: -0.5px; }
-        .hero-subtitle { font-size: 1.2rem; color: #8b949e; font-weight: 400; }
-        .section-card { background-color: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
+        /* Deep Dark Purple Gradient Background */
+        .stApp {
+            background: radial-gradient(circle at top left, #2e1065, #170f2c, #090514);
+            color: #f3e8ff;
+        }
+        
+        .hero-title { font-size: 2.8rem; font-weight: 700; color: #f3e8ff; letter-spacing: -0.5px; }
+        .hero-subtitle { font-size: 1.2rem; color: #d8b4fe; font-weight: 400; }
+        
+        .section-card { 
+            background: rgba(46, 16, 101, 0.45) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px; 
+            border-radius: 16px; 
+            border: 1px solid rgba(168, 85, 247, 0.25) !important; 
+            margin-bottom: 20px; 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
         
         .custom-metric-card {
-            background-color: #161b22;
+            background: rgba(46, 16, 101, 0.45) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 16px;
-            border-radius: 8px;
-            border: 1px solid #30363d;
+            border-radius: 16px;
+            border: 1px solid rgba(168, 85, 247, 0.25) !important;
             height: 100%;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
         }
         .custom-metric-label {
             font-size: 0.85rem;
-            color: #8b949e;
+            color: #d8b4fe;
             font-weight: 600;
             margin-bottom: 6px;
             text-transform: uppercase;
@@ -37,26 +55,50 @@ st.markdown("""
         }
         .custom-metric-value {
             font-size: 1.4rem;
-            color: #f0f6fc;
+            color: #f3e8ff;
             font-weight: 700;
             word-break: break-word;
             white-space: normal;
         }
         .vuln-box {
-            background-color: #161b22;
-            border: 1px solid #30363d;
+            background: rgba(46, 16, 101, 0.45) !important;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.25);
             border-left: 5px solid #f85149;
             padding: 16px;
-            border-radius: 6px;
+            border-radius: 12px;
             margin-bottom: 14px;
         }
         .vuln-box-med {
-            background-color: #161b22;
-            border: 1px solid #30363d;
+            background: rgba(46, 16, 101, 0.45) !important;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.25);
             border-left: 5px solid #d29922;
             padding: 16px;
-            border-radius: 6px;
+            border-radius: 12px;
             margin-bottom: 14px;
+        }
+        
+        /* Soft Lavender Headings */
+        h1, h2, h3 {
+            color: #d8b4fe !important;
+            font-weight: 700 !important;
+        }
+
+        /* Vibrant Violet Gradient Buttons */
+        .stButton > button {
+            background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 12px rgba(126, 58, 237, 0.4);
+        }
+        .stButton > button:hover {
+            background: linear-gradient(135deg, #6d28d9 0%, #7e22ce 100%) !important;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.6) !important;
+            transform: translateY(-2px);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -257,7 +299,6 @@ elif st.session_state.step == 'upload':
     with col_next:
         if uploaded_files:
             if st.button("🔍 Run Bulk Security Analysis", type="primary"):
-                # Preserve existing scanned files and update with newly uploaded ones
                 if 'scanned_files' not in st.session_state:
                     st.session_state.scanned_files = {}
                 
