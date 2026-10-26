@@ -12,13 +12,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Professional Custom CSS (Full Cyber Command Center Theme) ---
+# --- Professional Custom CSS (Sleek Deep Purple Gradient Theme) ---
 st.markdown("""
     <style>
+        /* Deep Dark Purple Gradient Background */
         .stApp {
-            background: 
-                linear-gradient(135deg, rgba(23, 15, 44, 0.94) 0%, rgba(9, 5, 20, 0.98) 100%),
-                radial-gradient(circle at top left, #3b0764, #170f2c, #090514);
+            background: radial-gradient(circle at top left, #2e1065, #170f2c, #090514);
             background-attachment: fixed;
             color: #f3e8ff;
         }
@@ -27,7 +26,7 @@ st.markdown("""
         .hero-subtitle { font-size: 1.2rem; color: #d8b4fe; font-weight: 400; margin-top: 5px; }
         
         .section-card { 
-            background: rgba(46, 16, 101, 0.5) !important;
+            background: rgba(46, 16, 101, 0.45) !important;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             padding: 20px; 
@@ -39,7 +38,7 @@ st.markdown("""
         }
         
         .custom-metric-card {
-            background: rgba(46, 16, 101, 0.5) !important;
+            background: rgba(46, 16, 101, 0.45) !important;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             padding: 16px;
@@ -65,7 +64,7 @@ st.markdown("""
             white-space: normal;
         }
         .vuln-box {
-            background: rgba(46, 16, 101, 0.5) !important;
+            background: rgba(46, 16, 101, 0.45) !important;
             backdrop-filter: blur(12px);
             border: 1px solid rgba(168, 85, 247, 0.3);
             border-left: 5px solid #f85149;
@@ -74,7 +73,7 @@ st.markdown("""
             margin-bottom: 14px;
         }
         .vuln-box-med {
-            background: rgba(46, 16, 101, 0.5) !important;
+            background: rgba(46, 16, 101, 0.45) !important;
             backdrop-filter: blur(12px);
             border: 1px solid rgba(168, 85, 247, 0.3);
             border-left: 5px solid #d29922;
@@ -83,12 +82,14 @@ st.markdown("""
             margin-bottom: 14px;
         }
         
+        /* Soft Lavender Headings */
         h1, h2, h3 {
             color: #d8b4fe !important;
             font-weight: 700 !important;
             text-shadow: 0 2px 10px rgba(168, 85, 247, 0.2);
         }
 
+        /* Vibrant Violet Gradient Buttons */
         .stButton > button {
             background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%) !important;
             color: #ffffff !important;
@@ -259,13 +260,12 @@ def generate_audit_report_text(filename, spec_title, total_endpoints, grade, iss
 # WELCOME SCREEN
 # ==========================================
 if st.session_state.step == 'welcome':
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 10, 1])
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 3.5, 1])
     with col2:
         header_html = """
-        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
-            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.6)); flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 10px;">
+            <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));">
                 <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="url(#deep_purple_grad)" stroke="#e9d5ff" stroke-width="1.2" stroke-linejoin="round"/>
                 <path d="M12 4.5L5 7V11.5C5 15.35 7.82 19.1 12 20.1C16.18 19.1 19 15.35 19 11.5V7L12 4.5Z" fill="#170f2c" stroke="#c084fc" stroke-width="1" stroke-linejoin="round"/>
                 <path d="M9 10L7 12L9 14" stroke="#e9d5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -509,64 +509,4 @@ elif st.session_state.step == 'results':
         st.subheader("Enterprise PDF Report Deliverables")
         st.markdown("Download formal, auditor-ready documentation for company compliance and developer deployment:")
         
-        col_rep1, col_rep2 = st.columns(2)
-        
-        with col_rep1:
-            st.markdown("""
-            <div class='section-card'>
-                <h4>Executive Audit Report</h4>
-                <p>Comprehensive breakdown of security ratings, OWASP mapping, and vulnerability guidance for stakeholders.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            audit_report_content = generate_audit_report_text(selected_filename, api_title, total_endpoints, grade, issues)
-            st.download_button(
-                label="Download Audit Report (TXT)",
-                data=audit_report_content,
-                file_name=f"{selected_filename}_Audit_Report.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-            
-        with col_rep2:
-            st.markdown("""
-            <div class='section-card'>
-                <h4>Corrected Code Export</h4>
-                <p>Clean, production-ready patched YAML specification file formatted as a downloadable document for deployment.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            remediated_yaml_download = yaml.dump(fixed_spec, sort_keys=False)
-            st.download_button(
-                label="Download Patched YAML Spec",
-                data=remediated_yaml_download,
-                file_name=f"{selected_filename}_secure_remediated.yaml",
-                mime="text/yaml",
-                type="primary",
-                use_container_width=True
-            )
-
-    with tab_chat:
-        st.subheader("Interactive API Security Assistant")
-        st.markdown(f"Ask questions regarding security posture, endpoints, or patches for **{selected_filename}**.")
-        
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-
-        if prompt := st.chat_input("e.g., Which endpoints have BOLA authorization vulnerabilities?"):
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-            prompt_lower = prompt.lower()
-            if "bola" in prompt_lower or "authorization" in prompt_lower:
-                response = f"In '{selected_filename}', endpoints containing URL parameters without explicit security schemes were flagged for BOLA risks (OWASP API1:2023) and automatically secured with Bearer token authentication."
-            elif "rate" in prompt_lower or "429" in prompt_lower:
-                response = f"In '{selected_filename}', endpoints lacking explicit HTTP 429 response structures were flagged for resource consumption risks (OWASP API4:2023) and updated with rate limit definitions."
-            else:
-                response = f"I've analyzed '{selected_filename}', which contains {len(spec.get('paths', {}))} paths and {len(issues)} active security findings. Let me know if you need help with compliance guidelines or deployment!"
-
-            st.session_state.messages.append({"role": "assistant", "content": response})
-            with st.chat_message("assistant"):
-                st.markdown(response)
+        col_rep1, col_rep2 = st.
