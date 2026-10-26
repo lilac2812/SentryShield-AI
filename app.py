@@ -509,4 +509,64 @@ elif st.session_state.step == 'results':
         st.subheader("Enterprise PDF Report Deliverables")
         st.markdown("Download formal, auditor-ready documentation for company compliance and developer deployment:")
         
-        col_rep1, col_rep2 = st.
+        col_rep1, col_rep2 = st.columns(2)
+        
+        with col_rep1:
+            st.markdown("""
+            <div class='section-card'>
+                <h4>Executive Audit Report</h4>
+                <p>Comprehensive breakdown of security ratings, OWASP mapping, and vulnerability guidance for stakeholders.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            audit_report_content = generate_audit_report_text(selected_filename, api_title, total_endpoints, grade, issues)
+            st.download_button(
+                label="Download Audit Report (TXT)",
+                data=audit_report_content,
+                file_name=f"{selected_filename}_Audit_Report.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+            
+        with col_rep2:
+            st.markdown("""
+            <div class='section-card'>
+                <h4>Corrected Code Export</h4>
+                <p>Clean, production-ready patched YAML specification file formatted as a downloadable document for deployment.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            remediated_yaml_download = yaml.dump(fixed_spec, sort_keys=False)
+            st.download_button(
+                label="Download Patched YAML Spec",
+                data=remediated_yaml_download,
+                file_name=f"{selected_filename}_secure_remediated.yaml",
+                mime="text/yaml",
+                type="primary",
+                use_container_width=True
+            )
+
+    with tab_chat:
+        st.subheader("Interactive API Security Assistant")
+        st.markdown(f"Ask questions regarding security posture, endpoints, or patches for **{selected_filename}**.")
+        
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        if prompt := st.chat_input("e.g., Which endpoints have BOLA authorization vulnerabilities?"):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            prompt_lower = prompt.lower()
+            if "bola" in prompt_lower or "authorization" in prompt_lower:
+                response = f"In '{selected_filename}', endpoints containing URL parameters without explicit security schemes were flagged for BOLA risks (OWASP API1:2023) and automatically secured with Bearer token authentication."
+            elif "rate" in prompt_lower or "429" in prompt_lower:
+                response = f"In '{selected_filename}', endpoints lacking explicit HTTP 429 response structures were flagged for resource consumption risks (OWASP API4:2023) and updated with rate limit definitions."
+            else:
+                response = f"I've analyzed '{selected_filename}', which contains {len(spec.get('paths', {}))} paths and {len(issues)} active security findings. Let me know if you need help with compliance guidelines or deployment!"
+
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            with st.chat_message("assistant"):
+                st.markdown(response)
