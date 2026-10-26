@@ -259,14 +259,34 @@ if st.session_state.step == 'welcome':
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 3.5, 1])
     with col2:
-        # Side-by-side layout for Logo and Title
-        logo_col, title_col = st.columns([1, 4])
-        with logo_col:
-            st.image("sticker_1793028013669.jpg", width=85)
-        with title_col:
-            st.markdown("<h1 class='hero-title'>SentryShield-AI</h1>", unsafe_allow_html=True)
-            st.markdown("<p class='hero-subtitle'>Enterprise OpenAPI Security Intelligence & Self-Healing Gateway</p>", unsafe_allow_html=True)
-        
+        # Custom Deep Purple Cyber Shield SVG Logo & Title Header
+        header_html = """
+        <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 10px;">
+            <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));">
+                <!-- Outer Cyber Frame -->
+                <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="url(#deep_purple_grad)" stroke="#e9d5ff" stroke-width="1.2" stroke-linejoin="round"/>
+                <!-- Inner Glowing Circuit Shield -->
+                <path d="M12 4.5L5 7V11.5C5 15.35 7.82 19.1 12 20.1C16.18 19.1 19 15.35 19 11.5V7L12 4.5Z" fill="#170f2c" stroke="#c084fc" stroke-width="1" stroke-linejoin="round"/>
+                <!-- Internal Code & Node Accents -->
+                <path d="M9 10L7 12L9 14" stroke="#e9d5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M15 10L17 12L15 14" stroke="#e9d5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13 8.5L11 15.5" stroke="#d8b4fe" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="12" cy="12" r="1.5" fill="#c084fc"/>
+                <defs>
+                    <linearGradient id="deep_purple_grad" x1="12" y1="2" x2="12" y2="23" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#581c87"/>
+                        <stop offset="0.5" stop-color="#3b0764"/>
+                        <stop offset="1" stop-color="#1e1b4b"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div>
+                <h1 class='hero-title' style="margin:0; font-size: 2.6rem;">SentryShield-AI</h1>
+                <p class='hero-subtitle' style="margin:0;">Enterprise OpenAPI Security Intelligence & Self-Healing Gateway</p>
+            </div>
+        </div>
+        """
+        st.markdown(header_html, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
         st.markdown("""
