@@ -15,22 +15,23 @@ st.set_page_config(
 # --- Professional Custom CSS ---
 st.markdown("""
     <style>
-        /* Base Dark Background for Results/Upload Screens */
+        /* Base Dark Background */
         .stApp {
             background: #0e1117;
             color: #f3e8ff;
         }
         
-        /* Conditional Cyber Circuit Background exclusively for Welcome Screen state */
+        /* Cyber Circuit Background exclusively for Welcome Screen state */
         .welcome-container {
             background: 
                 linear-gradient(135deg, rgba(23, 15, 44, 0.92) 0%, rgba(9, 5, 20, 0.96) 100%),
                 url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10h80v80H10z' fill='none'/%3E%3Cpath d='M20 0v40h30l10 10h40' stroke='%23a855f7' stroke-width='0.6' stroke-opacity='0.18' fill='none'/%3E%3Cpath d='M0 30h30l20 20v30' stroke='%23c084fc' stroke-width='0.6' stroke-opacity='0.18' fill='none'/%3E%3Ccircle cx='50' cy='50' r='2' fill='%23e9d5ff' fill-opacity='0.3'/%3E%3Ccircle cx='80' cy='30' r='1.5' fill='%23c084fc' fill-opacity='0.3'/%3E%3C/svg%3E"),
                 radial-gradient(circle at top left, #3b0764, #170f2c, #090514);
-            padding: 40px;
+            padding: 50px;
             border-radius: 20px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(168, 85, 247, 0.3);
+            margin-top: 20px;
         }
         
         .hero-title { font-size: 2.8rem; font-weight: 700; color: #f3e8ff; letter-spacing: -0.5px; margin: 0; }
@@ -271,16 +272,15 @@ def generate_audit_report_text(filename, spec_title, total_endpoints, grade, iss
 # WELCOME SCREEN
 # ==========================================
 if st.session_state.step == 'welcome':
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Wrap welcome screen inside the custom circuit background container
+    # Wrap welcome screen inside the custom circuit background container cleanly
     st.markdown('<div class="welcome-container">', unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 10, 1])
+    col1, col2, col3 = st.columns([0.5, 11, 0.5])
     with col2:
+        # Proper Purple Vector Cyber Shield SVG Logo & Title Header Side-by-Side
         header_html = """
-        <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 10px;">
-            <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));">
+        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.6)); flex-shrink: 0;">
                 <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="url(#deep_purple_grad)" stroke="#e9d5ff" stroke-width="1.2" stroke-linejoin="round"/>
                 <path d="M12 4.5L5 7V11.5C5 15.35 7.82 19.1 12 20.1C16.18 19.1 19 15.35 19 11.5V7L12 4.5Z" fill="#170f2c" stroke="#c084fc" stroke-width="1" stroke-linejoin="round"/>
                 <path d="M9 10L7 12L9 14" stroke="#e9d5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -296,8 +296,8 @@ if st.session_state.step == 'welcome':
                 </defs>
             </svg>
             <div>
-                <h1 class='hero-title' style="margin:0; font-size: 2.6rem;">SentryShield-AI</h1>
-                <p class='hero-subtitle' style="margin:0;">Enterprise OpenAPI Security Intelligence & Self-Healing Gateway</p>
+                <h1 class='hero-title'>SentryShield-AI</h1>
+                <p class='hero-subtitle'>Enterprise OpenAPI Security Intelligence & Self-Healing Gateway</p>
             </div>
         </div>
         """
