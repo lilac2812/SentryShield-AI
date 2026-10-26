@@ -12,38 +12,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Professional Custom CSS (Modern Glass - Dark Purple Theme) ---
+# --- Professional Custom CSS ---
 st.markdown("""
     <style>
-        /* Deep Dark Purple Gradient Background */
+        /* Base Dark Background for Results/Upload Screens */
         .stApp {
-            background: radial-gradient(circle at top left, #2e1065, #170f2c, #090514);
+            background: #0e1117;
             color: #f3e8ff;
+        }
+        
+        /* Conditional Cyber Circuit Background exclusively for Welcome Screen state */
+        .welcome-container {
+            background: 
+                linear-gradient(135deg, rgba(23, 15, 44, 0.92) 0%, rgba(9, 5, 20, 0.96) 100%),
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10h80v80H10z' fill='none'/%3E%3Cpath d='M20 0v40h30l10 10h40' stroke='%23a855f7' stroke-width='0.6' stroke-opacity='0.18' fill='none'/%3E%3Cpath d='M0 30h30l20 20v30' stroke='%23c084fc' stroke-width='0.6' stroke-opacity='0.18' fill='none'/%3E%3Ccircle cx='50' cy='50' r='2' fill='%23e9d5ff' fill-opacity='0.3'/%3E%3Ccircle cx='80' cy='30' r='1.5' fill='%23c084fc' fill-opacity='0.3'/%3E%3C/svg%3E"),
+                radial-gradient(circle at top left, #3b0764, #170f2c, #090514);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.3);
         }
         
         .hero-title { font-size: 2.8rem; font-weight: 700; color: #f3e8ff; letter-spacing: -0.5px; margin: 0; }
         .hero-subtitle { font-size: 1.2rem; color: #d8b4fe; font-weight: 400; margin-top: 5px; }
         
         .section-card { 
-            background: rgba(46, 16, 101, 0.45) !important;
+            background: rgba(46, 16, 101, 0.5) !important;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             padding: 20px; 
             border-radius: 16px; 
-            border: 1px solid rgba(168, 85, 247, 0.25) !important; 
+            border: 1px solid rgba(168, 85, 247, 0.3) !important; 
+            border-top: 3px solid #a855f7 !important;
             margin-bottom: 20px; 
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.5);
         }
         
         .custom-metric-card {
-            background: rgba(46, 16, 101, 0.45) !important;
+            background: rgba(46, 16, 101, 0.5) !important;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             padding: 16px;
             border-radius: 16px;
-            border: 1px solid rgba(168, 85, 247, 0.25) !important;
+            border: 1px solid rgba(168, 85, 247, 0.3) !important;
+            border-top: 3px solid #c084fc !important;
             height: 100%;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 25px 0 rgba(0, 0, 0, 0.4);
         }
         .custom-metric-label {
             font-size: 0.85rem;
@@ -61,18 +75,18 @@ st.markdown("""
             white-space: normal;
         }
         .vuln-box {
-            background: rgba(46, 16, 101, 0.45) !important;
+            background: rgba(46, 16, 101, 0.5) !important;
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(168, 85, 247, 0.25);
+            border: 1px solid rgba(168, 85, 247, 0.3);
             border-left: 5px solid #f85149;
             padding: 16px;
             border-radius: 12px;
             margin-bottom: 14px;
         }
         .vuln-box-med {
-            background: rgba(46, 16, 101, 0.45) !important;
+            background: rgba(46, 16, 101, 0.5) !important;
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(168, 85, 247, 0.25);
+            border: 1px solid rgba(168, 85, 247, 0.3);
             border-left: 5px solid #d29922;
             padding: 16px;
             border-radius: 12px;
@@ -83,6 +97,7 @@ st.markdown("""
         h1, h2, h3 {
             color: #d8b4fe !important;
             font-weight: 700 !important;
+            text-shadow: 0 2px 10px rgba(168, 85, 247, 0.2);
         }
 
         /* Vibrant Violet Gradient Buttons */
@@ -93,11 +108,11 @@ st.markdown("""
             border-radius: 10px !important;
             font-weight: 600 !important;
             transition: all 0.3s ease !important;
-            box-shadow: 0 4px 12px rgba(126, 58, 237, 0.4);
+            box-shadow: 0 4px 15px rgba(126, 58, 237, 0.4);
         }
         .stButton > button:hover {
             background: linear-gradient(135deg, #6d28d9 0%, #7e22ce 100%) !important;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.6) !important;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.7) !important;
             transform: translateY(-2px);
         }
     </style>
@@ -256,18 +271,18 @@ def generate_audit_report_text(filename, spec_title, total_endpoints, grade, iss
 # WELCOME SCREEN
 # ==========================================
 if st.session_state.step == 'welcome':
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 3.5, 1])
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Wrap welcome screen inside the custom circuit background container
+    st.markdown('<div class="welcome-container">', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 10, 1])
     with col2:
-        # Custom Deep Purple Cyber Shield SVG Logo & Title Header
         header_html = """
         <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 10px;">
             <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));">
-                <!-- Outer Cyber Frame -->
                 <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="url(#deep_purple_grad)" stroke="#e9d5ff" stroke-width="1.2" stroke-linejoin="round"/>
-                <!-- Inner Glowing Circuit Shield -->
                 <path d="M12 4.5L5 7V11.5C5 15.35 7.82 19.1 12 20.1C16.18 19.1 19 15.35 19 11.5V7L12 4.5Z" fill="#170f2c" stroke="#c084fc" stroke-width="1" stroke-linejoin="round"/>
-                <!-- Internal Code & Node Accents -->
                 <path d="M9 10L7 12L9 14" stroke="#e9d5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M15 10L17 12L15 14" stroke="#e9d5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M13 8.5L11 15.5" stroke="#d8b4fe" stroke-width="1.8" stroke-linecap="round"/>
@@ -305,6 +320,8 @@ if st.session_state.step == 'welcome':
         if st.button("Launch Security Suite", type="primary", use_container_width=True):
             st.session_state.step = 'upload'
             st.rerun()
+            
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ==========================================
