@@ -12,25 +12,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Professional Custom CSS ---
+# --- Professional Custom CSS (Full Cyber Command Center Theme) ---
 st.markdown("""
     <style>
         .stApp {
-            background: #0e1117;
-            color: #f3e8ff;
-        }
-        
-        /* Pure CSS & SVG Tech-Circuit Background for the Welcome Screen */
-        .welcome-cyber-box {
             background: 
                 linear-gradient(135deg, rgba(23, 15, 44, 0.94) 0%, rgba(9, 5, 20, 0.98) 100%),
-                url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10h100v100H10z' fill='none'/%3E%3Cpath d='M20 0v50h40l20 20h40' stroke='%23a855f7' stroke-width='0.8' stroke-opacity='0.25' fill='none'/%3E%3Cpath d='M0 40h40l25 25v55' stroke='%23c084fc' stroke-width='0.8' stroke-opacity='0.25' fill='none'/%3E%3Ccircle cx='60' cy='50' r='3' fill='%23e9d5ff' fill-opacity='0.4'/%3E%3Ccircle cx='100' cy='40' r='2.5' fill='%23c084fc' fill-opacity='0.4'/%3E%3Ccircle cx='40' cy='65' r='2' fill='%23a855f7' fill-opacity='0.4'/%3E%3C/svg%3E"),
                 radial-gradient(circle at top left, #3b0764, #170f2c, #090514);
-            padding: 50px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-            border: 1px solid rgba(168, 85, 247, 0.35);
-            margin-top: 10px;
+            background-attachment: fixed;
+            color: #f3e8ff;
         }
         
         .hero-title { font-size: 2.8rem; font-weight: 700; color: #f3e8ff; letter-spacing: -0.5px; margin: 0; }
@@ -271,10 +261,7 @@ def generate_audit_report_text(filename, spec_title, total_endpoints, grade, iss
 if st.session_state.step == 'welcome':
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Render the welcome screen inside the custom circuit-pattern container
-    st.markdown('<div class="welcome-cyber-box">', unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([0.5, 11, 0.5])
+    col1, col2, col3 = st.columns([1, 10, 1])
     with col2:
         header_html = """
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
@@ -318,8 +305,6 @@ if st.session_state.step == 'welcome':
         if st.button("Launch Security Suite", type="primary", use_container_width=True):
             st.session_state.step = 'upload'
             st.rerun()
-            
-    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ==========================================
